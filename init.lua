@@ -71,7 +71,7 @@ local function save(tensor, filename)
    if not xlua.require 'libsox' then
       dok.error('libsox package not found, please install libsox','audio.save')
    end
-   torch.Tensor().libsox.save(filename)
+   torch.Tensor().libsox.save(tensor, filename)
 end
 rawset(audio, 'save', save)
 
