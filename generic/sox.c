@@ -77,7 +77,7 @@ static void libsox_(save_audio_file)(THTensor *input, const char *file_name)
   if (!siginfo.channels)
     abort_("[save_audio_file] You need to load a file first (to set sample rate etc. parameters).");
   
-  if (THTensor_(size)(input, 2) != siginfo.channels || THTensor_(nDimension)(input) != 2)
+  if (THTensor_(size)(input, 1) != siginfo.channels || THTensor_(nDimension)(input) != 2)
     abort_("[save_audio_file] Tensor should be n x channels");
 
   sox_format_t * out = sox_open_write(file_name, &siginfo, NULL, NULL, NULL, NULL);
@@ -87,15 +87,15 @@ static void libsox_(save_audio_file)(THTensor *input, const char *file_name)
   
   THTensor * tensor = THTensor_(newContiguous)(input);
   real *tensor_data = THTensor_(data)(tensor);
-  int buffer_size = THTensor_(size)(input, 1) * siginfo.channels;
+  int buffer_size = THTensor_(size)(input, 0) * siginfo.channels;
   int32_t *buffer = (int32_t *)malloc(sizeof(int32_t) * buffer_size);
   int k;
   for (k=0; k<buffer_size; k++) {
     buffer[k] = (int32_t)tensor_data[k];
   }
   
-  size_t written = sox_write(out, buffer, THTensor_(size)(input, 1));
-  if (written != THTensor_(size)(input, 1))
+  size_t written = sox_write(out, buffer, THTensor_(size)(input, 0));
+  if (written != THTensor_(size)(input, 0))
     abort_("[save_audio_file] Partial write.");
 
   // free buffer and sox structures
