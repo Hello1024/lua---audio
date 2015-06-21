@@ -2,7 +2,7 @@ package = "audio"
 version = "0.1-0"
 
 source = {
-   url = "git://github.com/soumith/lua---audio",
+   url = "git://github.com/Hello1024/lua---audio",
    tag = "master"
 }
 
@@ -12,7 +12,7 @@ description = {
    	    Support audio I/O (Load files)
 	    Common audio operations (Short-time Fourier transforms, Spectrograms)
    ]],
-   homepage = "https://github.com/soumith/lua---audio",
+   homepage = "https://github.com/Hello1024/lua---audio",
    license  = "RWTFPL"
 }
 

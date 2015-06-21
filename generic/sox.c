@@ -33,6 +33,7 @@
 /* --     May 24th, 2012, 8:38PM - wrote load function - Soumith Chintala */
 /* ---------------------------------------------------------------------- */
 
+static sox_signalinfo_t siginfo;
 
 static THTensor * libsox_(read_audio_file)(const char *file_name)
 {
@@ -41,6 +42,9 @@ static THTensor * libsox_(read_audio_file)(const char *file_name)
   fd = sox_open_read(file_name, NULL, NULL, NULL);
   if (fd == NULL)
     abort_("[read_audio_file] Failure to read file");
+  
+  // Save signalinfo.
+  memcpy(&siginfo, &fd->signal, sizeof(sox_signalinfo_t));
   
   int nchannels = fd->signal.channels;
   long buffer_size = fd->signal.length;
@@ -68,6 +72,38 @@ static THTensor * libsox_(read_audio_file)(const char *file_name)
   return tensor;
 }
 
+static void libsox_(save_audio_file)(THTensor *input, const char *file_name)
+{
+  if (!siginfo.channels)
+    abort_("[save_audio_file] You need to load a file first (to set sample rate etc. parameters).");
+  
+  if (THTensor_(size)(input, 2) != siginfo.channels || THTensor_(nDimension)(input) != 2)
+    abort_("[save_audio_file] Tensor should be n x channels");
+
+  sox_format_t * out = sox_open_write(file_name, &siginfo, NULL, NULL, NULL, NULL);
+  
+  if (!out)
+    abort_("[save_audio_file] Open file for write failled.");
+  
+  THTensor * tensor = THTensor_(newContiguous)(input);
+  real *tensor_data = THTensor_(data)(tensor);
+  int buffer_size = THTensor_(size)(input, 1) * siginfo.channels;
+  int32_t *buffer = (int32_t *)malloc(sizeof(int32_t) * buffer_size);
+  int k;
+  for (k=0; k<buffer_size; k++) {
+    buffer[k] = (int32_t)tensor_data[k];
+  }
+  
+  size_t written = sox_write(out, buffer, THTensor_(size)(input, 1));
+  if (written != THTensor_(size)(input, 1))
+    abort_("[save_audio_file] Partial write.");
+
+  // free buffer and sox structures
+  sox_close(out);
+  free(buffer);
+  THTensor_(free)(tensor);
+}
+
 static int libsox_(Main_load)(lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   THTensor *tensor = libsox_(read_audio_file)(filename);
@@ -75,9 +111,17 @@ static int libsox_(Main_load)(lua_State *L) {
   return 1;
 }
 
+static int libsox_(Main_save)(lua_State *L) {
+  THTensor *input = luaT_checkudata(L, 1, torch_Tensor);
+  const char *filename = luaL_checkstring(L, 2);
+  libsox_(save_audio_file)(input, filename);
+  return 0;
+}
+
 static const luaL_Reg libsox_(Main__)[] =
 {
   {"load", libsox_(Main_load)},
+  {"save", libsox_(Main_save)},
   {NULL, NULL}
 };
 

@@ -58,6 +58,24 @@ end
 rawset(audio, 'load', load)
 
 ----------------------------------------------------------------------
+-- save audio to file.
+--
+local function save(tensor, filename)
+   if not filename then
+      print(dok.usage('audio.save',
+                       'Saves a torch.tensor to an MP3 file.', nil,
+                       {type='torch.Tensor', help='tensor to save', req=true},
+                       {type='string', help='path to file', req=true}))
+      dok.error('missing file name or tensor', 'audio.save')
+   end
+   if not xlua.require 'libsox' then
+      dok.error('libsox package not found, please install libsox','audio.save')
+   end
+   tensor.libsox.save(filename)
+end
+rawset(audio, 'save', save)
+
+----------------------------------------------------------------------
 -- spectrogram
 --
 local function spectrogram(...)
